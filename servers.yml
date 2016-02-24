@@ -1,0 +1,15 @@
+---
+- name: yoda
+  box: ubuntu/wily64
+  ram: 2048
+  ip: 192.168.1.100
+
+- name: obiwan
+  box: ubuntu/wily64
+  ram: 2048
+  ip: 192.168.1.101
+
+- name: luke
+  box: ubuntu/wily64
+  ram: 2048
+  ip: 192.168.1.102

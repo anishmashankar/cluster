@@ -1,0 +1,72 @@
+---
+# - hosts: [multi]
+#   sudo: yes
+#   pre_tasks:
+#     - name: create a directory for data
+#       file: path=/vagrant/data state=directory owner=vagrant
+#     - name: create a directory for logs
+#       file: path=/vagrant/logs state=directory owner=vagrant
+#   roles:
+#     - { # Oracle JDK
+#         role: ansible-java8,
+#         tags: ['runtimes','all']
+#       }
+#     - { # Scala
+#         role: ansible-scala,
+#         scala_version: "2.11.7",
+#         tags:['runtimes','all']
+#       }
+#     - { #SBT
+#         role: ansible-sbt,
+#         sbt_version: "0.13.9",
+#         tags:['scala-tools','all']
+#       }
+#
+- hosts: [master]
+  sudo: yes
+  roles:
+#     - { # ZOOKEEPER
+#         role: ansible-zookeeper,
+#         tags: ['master','zookeeper']
+#       }
+#     - { # MESOS
+#         role: 'ansible-mesos',
+#         zookeeper_hostnames: "{{ groups.master | join(':' + zookeeper_client_port + ',')  }}:{{ zookeeper_client_port  }}",
+#         mesos_install_mode: master,
+#         tags: ['mesos','master']
+#       }
+#     - { # MARATHON
+#         role: 'ansible-marathon',
+#         zookeeper_hostnames: "{{ groups.master | join(':' + zookeeper_client_port + ',')  }}:{{ zookeeper_client_port  }}",
+#         tags: ['marathon','master']
+#       }
+    - { #CONSUL
+        role: 'ansible-consul',
+        consul_install_mode: 'server',
+        consul_conf_bootstrap: true,
+        tags: ['consul','master']
+      }
+#
+#
+- hosts: [apprentice]
+  sudo: yes
+  # tasks:
+#     - name: install docker on all slaves
+#       script: ~/cluster/playbooks/scripts/docker.sh
+#       tags:
+#         - docker
+#         - slave
+  roles:
+#     - { # MESOS
+#         role: 'ansible-mesos',
+#         zookeeper_hostnames: "{{ groups.master | join(':' + zookeeper_client_port + ',')  }}:{{ zookeeper_client_port  }}",
+#         mesos_install_mode: slave,
+#         tags: ['mesos','slave']
+#       }
+    - { # CONSUL
+        role: 'ansible-consul',
+        consul_install_webui: true,
+        tags: ['consul','slave'],
+        consul_conf_start_join: "192.168.1.100" ,
+        consul_conf_retry_join: "192.168.1.100"
+      }
