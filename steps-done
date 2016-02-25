@@ -1,4 +1,0 @@
-cloned repos from ansible-shipyard:  zookeeper, java, scala, sbt
-edited roles/ansible-zookeeper/defaults/main.yml to set log and data directory for zookeeper
-create hosts file and add the parameter zoo_id
-bringing vagrant cluster up and install java, scala, sbt and zookeeper
