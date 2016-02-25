@@ -1,0 +1,41 @@
+- name: Create Kafka Installation directory
+  file: {
+    state: directory
+    path: "{{ kafka_mesos_install_dir }}"
+    }
+
+- name: Download Kafka tar
+  get_url: {
+    url: "{{ kafka_tar_url }}"
+    dest: {{ kafka_mesos_install_dir }}
+  }
+
+- name: Clone Kafka-Mesos github repository
+  git: {
+    repo: git://{{ kafka_mesos_git }}
+    dest: {{ kafka_mesos_install_dir }}
+    }
+  register: kafka-mesos-download
+
+- name: Copy the build script to destination
+  template: src=build.sh.j2 dest={{kafka_mesos_install_dir}}/build.sh chmod=755
+
+- name: Build Kafka-Mesos
+  command: " {{ kafka_mesos_install_dir }}/build.sh"
+  when: kafka-mesos-download|succeeded
+  register: kafka-mesos built
+
+- name: Copy rewritten kafka-mesos.sh
+  template: src=kafka-mesos.sh.j2 dest={{ kafka_mesos_install_dir }}/kafka-mesos.sh
+
+- name: systemd check
+  stat: path=/lib/systemd/system/
+  register: systemd_check
+
+- name: install Kafka scheduler systemd service
+  template: src=kafka-mesos.service.j2 dest=/lib/systemd/system/kafka-mesos.service
+  when: systemd_check.stat.exists==true
+  notify: restart kafka-mesos service
+
+- debug: msg="Systemd check failed. You can manually start kafka-scheduler by running the command present in {{ kafka_mesos_install_dir }}"
+  when: systemd_check.stat.exists=false

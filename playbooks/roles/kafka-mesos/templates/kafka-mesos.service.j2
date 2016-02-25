@@ -1,0 +1,13 @@
+# {{ansible_managed}}
+
+[Unit]
+Description=ZooKeeper
+
+[Service]
+Type=simple
+ExecStart={{kafka_mesos_install_dir}}/kafka-mesos.sh scheduler
+
+TimeoutSec=300
+
+[Install]
+WantedBy=multi-user.target
