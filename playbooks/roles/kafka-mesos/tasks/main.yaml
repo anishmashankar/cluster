@@ -35,7 +35,7 @@
 - name: install Kafka scheduler systemd service
   template: src=kafka-mesos.service.j2 dest=/lib/systemd/system/kafka-mesos.service
   when: systemd_check.stat.exists==true
-  notify: restart kafka-mesos service
+  notify: Restart kafka scheduler
 
 - debug: msg="Systemd check failed. You can manually start kafka-scheduler by running the command present in {{ kafka_mesos_install_dir }}"
   when: systemd_check.stat.exists=false
