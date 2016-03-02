@@ -1,0 +1,11 @@
+debug=true
+
+#user=vagrant
+
+storage=zk:/{{ kafka_zookeeper_storage }}
+
+master={{ mesos_master }}
+
+zk=192.168.1.100:2181/chroot
+
+api=http://{{ inventory_hostname }}:{{ kafka_mesos_scheduler_port }}

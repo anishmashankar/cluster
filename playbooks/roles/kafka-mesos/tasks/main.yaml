@@ -1,41 +1,58 @@
-- name: Create Kafka Installation directory
-  file: {
-    state: directory
-    path: "{{ kafka_mesos_install_dir }}"
-    }
+#- name: Clone Kafka-Mesos github repository
+#  git:
+#    repo: git://{{ kafka_mesos_git }}
+#    dest: "{{ kafka_mesos_install_dir }}"
 
-- name: Download Kafka tar
-  get_url: {
-    url: "{{ kafka_tar_url }}"
-    dest: {{ kafka_mesos_install_dir }}
-  }
+# - name: Download Kafka tar
+#   get_url:
+#     url: "{{ kafka_tar_url }}"
+#     dest: "{{ kafka_mesos_install_dir }}"
 
-- name: Clone Kafka-Mesos github repository
-  git: {
-    repo: git://{{ kafka_mesos_git }}
-    dest: {{ kafka_mesos_install_dir }}
-    }
-  register: kafka-mesos-download
 
-- name: Copy the build script to destination
-  template: src=build.sh.j2 dest={{kafka_mesos_install_dir}}/build.sh chmod=755
+#- name: Copy the build script to destination
+#  template: src=build.sh.j2 dest={{kafka_mesos_install_dir}}/build.sh mode=0755
 
-- name: Build Kafka-Mesos
-  command: " {{ kafka_mesos_install_dir }}/build.sh"
-  when: kafka-mesos-download|succeeded
-  register: kafka-mesos built
+#- name: Build Kafka-Mesos
+#  command: "sh {{ kafka_mesos_install_dir }}/build.sh"
 
 - name: Copy rewritten kafka-mesos.sh
   template: src=kafka-mesos.sh.j2 dest={{ kafka_mesos_install_dir }}/kafka-mesos.sh
 
-- name: systemd check
-  stat: path=/lib/systemd/system/
-  register: systemd_check
+- name: Copy updated kafka-mesos.properties
+  template: src=kafka-mesos.properties.j2 dest={{ kafka_mesos_install_dir }}/kafka-mesos.properties
 
-- name: install Kafka scheduler systemd service
-  template: src=kafka-mesos.service.j2 dest=/lib/systemd/system/kafka-mesos.service
-  when: systemd_check.stat.exists==true
-  notify: Restart kafka scheduler
+# - name: systemd check
+#   stat: path=/lib/systemd/system/
+#   register: systemd_check
+#   when: is_marathon_app is false
+#
+# - name: install Kafka scheduler systemd service
+#   template: src=kafka-mesos.service.j2 dest=/lib/systemd/system/kafka-mesos.service
+#   when: systemd_check.stat.exists==true
+#   notify: Restart kafka scheduler
+#
+# - debug: msg="Systemd check failed. You can manually start kafka-scheduler by running the command present in {{ kafka_mesos_install_dir }}. Also, if you have Marathon set up, let the deployment continue"
+#   when: systemd_check.stat.exists=false
 
-- debug: msg="Systemd check failed. You can manually start kafka-scheduler by running the command present in {{ kafka_mesos_install_dir }}"
-  when: systemd_check.stat.exists=false
+- set_fact:
+    request_body:
+      id: kafka-scheduler
+      cpus: 0.1
+      mem: 512
+      uris: ['file:///{{kafka_mesos_install_dir}}']
+      cmd: ./kafka-mesos.sh scheduler
+      healthChecks:
+          command: curl --silent --fail -X GET http://localhost:{{ kafka_mesos_scheduler_port }}/health
+          protocol: COMMAND
+          gracePeriodSeconds: 60
+          intervalSeconds: 30
+          maxConsecutiveFailures: 1
+
+- name: start marathon app
+  uri:
+    url: http://{{ mesos_scheduler_ip }}:{{ marathon_port }}/v2/apps/kafka-scheduler
+    method: PUT
+    body: "{{ request_body | to_json }}"
+    debug: msg="{{ request_body | to_json }}
+    HEADER_Content-Type: "application/json"
+    status_code: 200,201,204

@@ -1,1 +1,8 @@
 .vagrant
+deploy
+kafka
+data
+nohup.out
+zookeeper.out
+consul-services
+logs
